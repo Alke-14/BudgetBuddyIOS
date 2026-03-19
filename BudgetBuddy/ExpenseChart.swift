@@ -31,7 +31,7 @@ struct ExpenseChart: View {
             }
             .frame(height: 300)
             .chartLegend(position: .bottom, spacing: 20)
-            .animation(.spring, value: expenses.items)
+            .animation(.bouncy, value: expenses.items)
             .chartBackground { chartProxy in
                 GeometryReader { geometry in
                     let frame = geometry[chartProxy.plotAreaFrame]
