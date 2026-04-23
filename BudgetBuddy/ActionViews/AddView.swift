@@ -13,13 +13,14 @@ struct AddView: View {
     @State private var name = ""
     @State private var type = "Personal"
     @State private var amount = 0.0
+    @State private var date = Date()
     
     var expenses: Expenses
-    
+    var initialDate: Date?
     let types = ["Transportation", "Housing", "Personal", "Other", "Food"]
     var body: some View {
-        NavigationStack {
-            Form {
+        Form {
+            Section("Details") {
                 TextField("Name", text: $name)
                 
                 Picker("Type", selection: $type) {
@@ -27,29 +28,42 @@ struct AddView: View {
                         Text($0)
                     }
                 }
-                TextField("Amount", value: $amount, format: .currency(code: "USD")).keyboardType(.decimalPad)
+                
+                TextField("Amount", value: $amount, format: .currency(code: "USD"))
+                    .keyboardType(.decimalPad)
             }
-            .navigationTitle(Text("Add Expense"))
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel", role: .destructive) {
-                        dismiss()
-                    }
-                    .foregroundStyle(Color(.red))
+            
+            Section("Date") {
+                DatePicker("Date of Expense", selection: $date, displayedComponents: .date)
+            }
+        }
+        .navigationTitle("Add Expense")
+        .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            if let initialDate {
+                date = initialDate
+            }
+        }
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button("Cancel", role: .destructive) {
+                    dismiss()
                 }
-                ToolbarItem {
-                    Button("Save") {
-                        let item = ExpenseItem(name:name, type:type, amount: amount)
-                        expenses.items.append(item)
-                        dismiss()
-                    }
-                    .foregroundStyle(Color(.blue))
+                .foregroundStyle(.red)
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Save") {
+                    let item = ExpenseItem(name: name, type: type, amount: amount, date: date)
+                    expenses.items.append(item)
+                    dismiss()
                 }
+                .disabled(name.isEmpty || amount == 0)
             }
         }
     }
 }
-
 #Preview {
-    AddView(expenses: Expenses())
+    NavigationStack {
+        AddView(expenses: Expenses())
+    }
 }

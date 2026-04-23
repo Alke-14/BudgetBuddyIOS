@@ -18,8 +18,8 @@ struct ContentView: View {
                 }
             SubscriptionsList()
                 .tabItem {
-                    Image(systemName: "book")
-                    Text("Saving Goals")
+                    Image(systemName: "calendar")
+                    Text("Subscriptions")
                 }
         }
     }

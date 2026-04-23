@@ -9,48 +9,82 @@ import SwiftUI
 import Charts
 
 struct ExpenseChart: View {
-    var expenses: Expenses
-    
-    var groupedExpenses: [(type: String, total: Double)] {
-        let grouped = Dictionary(grouping: expenses.items, by: { $0.type})
-        return grouped.map { (type,items) in (type: type, total: items.reduce(0) { $0 + $1.amount})
-        }
-        .sorted { $0.total > $1.total}
+    var items: [ExpenseItem]
+    var mode: ChartViewMode
+
+    enum ChartViewMode {
+        case pie, bar
     }
-    
+
+    // Data grouped by Category (for Pie)
+    var categoryTotals: [(type: String, total: Double)] {
+        let grouped = Dictionary(grouping: items, by: { $0.type })
+        return grouped.map { (type: $0.key, total: $0.value.reduce(0) { $0 + $1.amount }) }
+            .sorted { $0.total > $1.total }
+    }
+
+    // Data grouped by Day (for Bar)
+    var dailyTotals: [(date: Date, total: Double)] {
+        let grouped = Dictionary(grouping: items) { item in
+            Calendar.current.startOfDay(for: item.date)
+        }
+        return grouped.map { (date: $0.key, total: $0.value.reduce(0) { $0 + $1.amount }) }
+            .sorted { $0.date < $1.date }
+    }
 
     var body: some View {
         VStack {
-            Chart(groupedExpenses, id: \.type) { item in SectorMark(
-                    angle: .value("Amount", item.total),
-                    innerRadius: .ratio(0.6),
-                    angularInset: 1.5
-                )
-                .foregroundStyle(by: .value("Category", item.type))
-                .cornerRadius(5)
-            }
-            .frame(height: 300)
-            .chartLegend(position: .bottom, spacing: 20)
-            .animation(.bouncy, value: expenses.items)
-            .chartBackground { chartProxy in
-                GeometryReader { geometry in
-                    let frame = geometry[chartProxy.plotAreaFrame]
-                    VStack {
-                        Text("Total")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        Text("$\(groupedExpenses.reduce(0) { $0 + $1.total}, specifier: "%.2f")")
-                            .font(.headline.bold())
+            if items.isEmpty {
+                ContentUnavailableView("No Data", systemImage: "chart.pie", description: Text("Try selecting a different date."))
+            } else {
+                Chart {
+                    if mode == .pie {
+                        ForEach(categoryTotals, id: \.type) { item in
+                            SectorMark(
+                                angle: .value("Amount", item.total),
+                                innerRadius: .ratio(0.6),
+                                angularInset: 1.5
+                            )
+                            .foregroundStyle(by: .value("Category", item.type))
+                            .cornerRadius(5)
+                        }
+                    } else {
+                        ForEach(dailyTotals, id: \.date) { item in
+                            BarMark(
+                                x: .value("Day", item.date, unit: .day),
+                                y: .value("Amount", item.total)
+                            )
+                            .foregroundStyle(.blue.gradient)
+                            .cornerRadius(4)
+                        }
                     }
-                    .position(x: frame.midX, y: frame.midY)
                 }
-                
+                // Customize X-axis for weekly view
+                .chartXAxis {
+                    if mode == .bar {
+                        AxisMarks(values: .stride(by: .day)) { _ in
+                            AxisValueLabel(format: .dateTime.weekday(.abbreviated))
+                        }
+                    }
+                }
+                .chartBackground { chartProxy in
+                    if mode == .pie {
+                        // Keep existing "Total" overlay for the donut hole
+                        GeometryReader { geometry in
+                            let frame = geometry[chartProxy.plotAreaFrame]
+                            VStack {
+                                Text("Total").font(.caption).foregroundColor(.secondary)
+                                Text("$\(items.reduce(0){$0 + $1.amount}, specifier: "%.2f")")
+                                    .font(.headline.bold())
+                            }
+                            .position(x: frame.midX, y: frame.midY)
+                        }
+                    }
+                }
             }
-            
         }
     }
 }
-
 #Preview {
-    ExpenseChart(expenses: Expenses())
+    ExpenseChart(items: [], mode: .bar)
 }
