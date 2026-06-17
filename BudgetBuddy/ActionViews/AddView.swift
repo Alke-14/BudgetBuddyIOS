@@ -17,7 +17,7 @@ struct AddView: View {
     
     var expenses: Expenses
     var initialDate: Date?
-    let types = ["Transportation", "Housing", "Personal", "Food", "Fun for Aisha", "Miscellaneous"]
+    let types = ["Transportation", "Housing", "Personal", "Food", "Fun for Aisha", "Miscellaneous", "Medical Expense"]
     var body: some View {
         Form {
             Section("Details") {
